@@ -1,0 +1,32 @@
+name: Lighthouse CI
+
+on:
+  pull_request:
+  schedule:
+    # Monday 07:00 UTC — runs against main weekly so we catch slow drift.
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+jobs:
+  lhci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Run Lighthouse CI
+        run: npx --yes @lhci/cli@latest autorun
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: .lighthouseci/
+          retention-days: 30
